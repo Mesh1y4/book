@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book S&M</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <script src="./js/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<header>
+    <h1>Book_Search&Mark</h1>
+</header>
+
+<!-- メイン -->
+<main>
+    <h2>■ブック検索</h2>
+    <input type="text" id="word" placeholder=" 検索ワードを入力">
+    <button id="send">検索</button>
+    <button id="back">戻る</button>
+
+    <button id="favorite">お気に入り</button>
+    <button id="favoritebtn">×</button>
+
+    <div id="favoritefun">
+        <br>
+        <h2>■お気に入り</h2>
+        <input type="text" id="key" placeholder=" 書籍名を入力">
+        <textarea id="memo" placeholder=" メモを入力"></textarea>
+        <ul>
+            <li id="save">保存</li>
+            <li id="delete">削除 (※対象の書籍名を入力、削除後に更新)</li>
+            <li id="clear">全て削除</li>
+        </ul>
+        <table id="list1"></table>
+        <br>
+    </div>
+    <h2>■検索結果</h2>
+    <div>
+        <table id="list2">
+            <tr>
+                <th style="width:40%;">書籍名</th>
+                <th style="width:10%;">出版日</th>
+                <th style="width:10%;">出版社</th>
+                <th style="width:15%;">概要</th>
+                <th style="width:20%;">画像/リンク</th>
+                <th style="width:5%;">★</th>
+            </tr>
+        </table>
+    </div>
+</main>
+
+
+
+<!-- 以下、Script -->
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+$("#send").on("click",function(){
+    const url = "https://www.googleapis.com/books/v1/volumes?q="+$("#word").val();
+    $.ajax({
+            url: url,
+            dataType: "json"
+    }).done(function(data) {
+        //HTMLで表示させたいもの：[No]、書籍名、出版日、サムネイル[リンク]
+        console.log(data);             //オブジェクトの中を確認
+        const len = data.items.length; //データの数を取得
+        let html;
+        for(let i=0; i<len; i++){
+            console.log(typeof data.items[i].volumeInfo.publishedDate)
+            console.log(typeof data.items[i].volumeInfo.publishedDate)
+            if(typeof data.items[i].volumeInfo.publishedDate == "undefined"){
+                data.items[i].volumeInfo.publishedDate = "出版日（不明）";
+            }else if(typeof data.items[i].volumeInfo.publisher == "undefined"){
+                data.items[i].volumeInfo.publisher = "出版社（不明）";
+            }else if(typeof data.items[i].volumeInfo.description == "undefined"){
+                data.items[i].volumeInfo.description = "説明（不明）";
+            }
+            html += `
+                <tr>
+                    <td>${data.items[i].volumeInfo.title}</td>
+                    <td>${data.items[i].volumeInfo.publishedDate}</td>
+                    <td>${data.items[i].volumeInfo.publisher}</td>
+                    <td>${data.items[i].volumeInfo.description}</td>
+                    <td>
+                        <a target="_blank" href="${data.items[i].volumeInfo.infoLink}">
+                        <img src="${data.items[i].volumeInfo.imageLinks.thumbnail}">
+                    </td>
+                    <td><input type="button" onclick="window.external.AddFavorite('${data.items[i].volumeInfo.infoLink}','お気に入り登録')" value="★"</input></td>
+                </tr>
+            `; // ※button設定は上手くいかず、今後の課題
+        }
+        //table要素のid="list"に追加
+        $("#list2").empty().hide().append(html).fadeIn(1000); // 1秒後に表示
+    });
+})
+
+// お気に入り機能の表示
+$("#favorite").on("click",function(){
+    $("#favoritebtn").show().fadeIn(1000);
+    $("#favoritefun").show().fadeIn(1000);
+});
+
+$("#favoritebtn").on("click",function(){
+    $("#favoritebtn").hide();
+    $("#favoritefun").hide();
+});
+
+// 検索ワードの履歴残せる？
+$("#send").on("click",function(){
+    const word = $("#word").val();
+    sessionStorage.setItem(word,'検索履歴');
+});
+
+// Save（保存） クリックイベント
+$("#save").on("click",function(){
+    const key = $("#key").val();
+    const memo = $("#memo").val();
+    localStorage.setItem(key,memo);
+    const html = '<tr><td>'+key+'</td><td>'+memo+'</td></tr>';
+    $("#list1").append(html);
+});
+
+// Delete（一部削除）クリックイベント
+$("#delete").on("click",function(){
+    const key = $("#key").val();
+    localStorage.removeItem(key);
+    $("#list1").remove(key);
+    console.log(key);
+});
+
+// Clear（全消し） クリックイベント
+$("#clear").on("click",function(){
+    localStorage.clear();
+    $("#list1").empty();
+});
+
+// ページ読み込み：保存データ取得表示
+for(let i=0; i<localStorage.length; i++){
+    const key = localStorage.key(i);
+    const memo = localStorage.getItem(key);
+    const html = '<tr><td>'+key+'</td><td>'+memo+'</td></tr>'
+    $("#list1").append(html);
+}
+
+// リストの削除
+$("#back").on("click",function(){
+    $("#list2").empty();
+});
+
+</script>
+</body>
+</html>
